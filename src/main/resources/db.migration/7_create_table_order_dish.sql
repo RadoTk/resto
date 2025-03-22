@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS order_dish (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL,
+    dish_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES "order"(id) ON DELETE CASCADE,
+    FOREIGN KEY (dish_id) REFERENCES dish(id) ON DELETE CASCADE
+); 
