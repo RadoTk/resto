@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class OrderCrudOperations {
+public class OrderCrudOperations implements CrudOperations<Order> {
     private final DataSource dataSource;
     private final DishOrderCrudOperations dishOrderCrudOperations;
 
@@ -52,7 +52,7 @@ public class OrderCrudOperations {
                         });
                     }
                     
-                    return findById(id).orElse(order);
+                    return findOptionalById(id).orElse(order);
                 } else {
                     throw new SQLException("Creating order failed, no ID obtained.");
                 }
@@ -62,7 +62,7 @@ public class OrderCrudOperations {
         }
     }
 
-    public Optional<Order> findById(Long id) {
+    public Optional<Order> findOptionalById(Long id) {
         String sql = "SELECT id, reference, creation_datetime FROM \"order\" WHERE id = ?";
         
         try (Connection connection = dataSource.getConnection();
@@ -341,5 +341,67 @@ public class OrderCrudOperations {
             
             statement.executeUpdate();
         }
+    }
+
+    @Override
+    public List<Order> getAll(int page, int size) {
+        String sql = "SELECT id, reference, creation_datetime FROM \"order\" LIMIT ? OFFSET ?";
+        List<Order> orders = new ArrayList<>();
+        
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setInt(1, size);
+            statement.setInt(2, page * size);
+            
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    Order order = mapResultSetToOrder(resultSet);
+                    
+                    // Load dish orders
+                    order.setDishOrders(dishOrderCrudOperations.findByOrderId(order.getId()));
+                    
+                    // Load status history
+                    order.setStatusHistory(findOrderStatusHistory(order.getId()));
+                    
+                    orders.add(order);
+                }
+            }
+            
+            return orders;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding orders with pagination: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Récupère un order par son ID
+     * @param id identifiant de l'order
+     * @return l'order trouvé
+     */
+    @Override
+    public Order findById(Long id) {
+        Optional<Order> order = findOptionalById(id);
+        if (order.isPresent()) {
+            return order.get();
+        } else {
+            throw new RuntimeException("Order with ID " + id + " not found");
+        }
+    }
+
+    
+    @Override
+    public List<Order> saveAll(List<Order> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<Order> savedOrders = new ArrayList<>();
+        for (Order order : entities) {
+            Order savedOrder = save(order);
+            savedOrders.add(savedOrder);
+        }
+        
+        return savedOrders;
     }
 } 

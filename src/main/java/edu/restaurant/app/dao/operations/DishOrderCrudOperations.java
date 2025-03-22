@@ -180,9 +180,6 @@ public class DishOrderCrudOperations {
         }
     }
 
-    /**
-     * Création d'un plat de commande dans une transaction existante
-     */
     private DishOrder createWithTransaction(Connection connection, DishOrder dishOrder) throws SQLException {
         String sql = "INSERT INTO order_dish (order_id, dish_id, quantity) VALUES (?, ?, ?)";
         
@@ -217,9 +214,6 @@ public class DishOrderCrudOperations {
         }
     }
 
-    /**
-     * Mise à jour d'un plat de commande dans une transaction existante
-     */
     private DishOrder updateWithTransaction(Connection connection, DishOrder dishOrder) throws SQLException {
         String sql = "UPDATE order_dish SET order_id = ?, dish_id = ?, quantity = ? WHERE id = ?";
         
